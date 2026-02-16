@@ -113,6 +113,10 @@ def clean_referer(referer):
 def ping():
     return jsonify({'status': 'pong'})
 
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy'})
+
 @app.route('/active')
 def get_active():
     active = []
@@ -412,11 +416,15 @@ def force_cleanup():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    # Берем порт из переменной окружения (для Koyeb) или используем 5000 для локальной разработки
+    port = int(os.environ.get('PORT', 5000))
+    
     print("\n" + "="*70)
     print("VIDEO DOWNLOAD SERVER STARTING...")
     print("="*70)
     print(f"Download folder: {os.path.abspath(DOWNLOAD_FOLDER)}")
-    print(f"Server URL: http://localhost:5000")
+    print(f"Server URL: http://localhost:{port}")
+    print(f"PORT from env: {os.environ.get('PORT', 'not set')}")
     print("✅ FEATURES:")
     print("  • Auto-clean referer (fixes duplicates like aniv//anivox.fun)")
     print("  • Quoted arguments")
@@ -424,4 +432,4 @@ if __name__ == '__main__':
     print(f"  • aria2c: {'AVAILABLE' if HAVE_ARIA2 else 'not found'}")
     print("="*70 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
