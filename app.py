@@ -2,6 +2,13 @@
 import sys
 import io
 import re
+
+# Фикс для Windows консоли
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+from flask import Flask, request, send_file, jsonify
+from flask_cors import CORS
 import os
 import uuid
 import threading
@@ -9,12 +16,6 @@ from datetime import datetime, timedelta
 import logging
 import time
 import subprocess
-from flask import Flask, request, send_file, jsonify
-from flask_cors import CORS
-
-# Настройка кодировки для Windows
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Настройка логирования
 logging.basicConfig(
@@ -75,6 +76,8 @@ def check_aria2():
 
 HAVE_ARIA2 = check_aria2()
 
+# ==================== ФУНКЦИЯ ОЧИСТКИ REFERER ====================
+
 def clean_referer(referer):
     """Очищает referer от дубликатов и исправляет формат"""
     if not referer:
@@ -104,13 +107,11 @@ def clean_referer(referer):
     
     return referer
 
+# ==================== ЭНДПОИНТЫ ====================
+
 @app.route('/ping')
 def ping():
     return jsonify({'status': 'pong'})
-
-@app.route('/health')
-def health():
-    return jsonify({'status': 'healthy'})
 
 @app.route('/active')
 def get_active():
@@ -156,10 +157,12 @@ def get_formats():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
+    # ✅ ОЧИЩАЕМ REFERER
     clean_ref = clean_referer(referer)
     
     logger.info("="*60)
     logger.info(f"GET FORMATS: {url[:100]}...")
+    logger.info(f"Original referer: {referer}")
     logger.info(f"Cleaned referer: {clean_ref}")
     
     try:
@@ -171,6 +174,10 @@ def get_formats():
             url
         ]
         
+        # Показываем команду с кавычками
+        cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --referer "{clean_ref}" --list-formats "{url}"'
+        logger.info(f"Running: {cmd_str}")
+        
         process = subprocess.run(
             cmd,
             capture_output=True,
@@ -180,6 +187,7 @@ def get_formats():
         )
         
         output = process.stdout + process.stderr
+        
         formats = []
         lines = output.split('\n')
         
@@ -224,6 +232,7 @@ def get_formats():
         })
         
     except subprocess.TimeoutExpired:
+        logger.error("Formats timeout")
         return jsonify({'error': 'Request timeout'}), 504
     except Exception as e:
         logger.error(f"Formats error: {str(e)}")
@@ -239,10 +248,13 @@ def download_video():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
+    # ✅ ОЧИЩАЕМ REFERER
     clean_ref = clean_referer(referer)
     
     logger.info("="*60)
     logger.info(f"DOWNLOAD: {url[:100]}...")
+    logger.info(f"FORMAT: {format_id}")
+    logger.info(f"Original referer: {referer}")
     logger.info(f"Cleaned referer: {clean_ref}")
     
     task_id = str(uuid.uuid4())
@@ -274,6 +286,7 @@ def download_video():
     
     def download_task():
         try:
+            # 🔥 КОМАНДА С ОЧИЩЕННЫМ REFERER
             cmd = [
                 'yt-dlp',
                 '--extractor-args', 'generic:impersonate=chrome-120',
@@ -283,6 +296,10 @@ def download_video():
                 '-f', format_id,
                 url
             ]
+            
+            # Показываем команду с кавычками
+            cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --referer "{clean_ref}" -o "{output_template}" -f {format_id} "{url}"'
+            logger.info(f"Task {task_id}: Running: {cmd_str}")
             
             download_tasks[task_id]['status'] = 'downloading'
             
@@ -301,6 +318,7 @@ def download_video():
                 line = line.strip()
                 if line:
                     parser.parse_line(line)
+                    logger.debug(f"Task {task_id}: {line}")
             
             return_code = process.wait()
             
@@ -394,12 +412,16 @@ def force_cleanup():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
     print("\n" + "="*70)
     print("VIDEO DOWNLOAD SERVER STARTING...")
     print("="*70)
     print(f"Download folder: {os.path.abspath(DOWNLOAD_FOLDER)}")
-    print(f"Server URL: http://localhost:{port}")
+    print(f"Server URL: http://localhost:5000")
+    print("✅ FEATURES:")
+    print("  • Auto-clean referer (fixes duplicates like aniv//anivox.fun)")
+    print("  • Quoted arguments")
+    print("  • Trailing slash added automatically")
+    print(f"  • aria2c: {'AVAILABLE' if HAVE_ARIA2 else 'not found'}")
     print("="*70 + "\n")
     
-    app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
