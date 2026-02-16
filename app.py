@@ -173,20 +173,13 @@ def get_formats():
         cmd = [
             'yt-dlp',
             '--extractor-args', 'generic:impersonate=chrome-120',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             '--referer', clean_ref,
-            '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            '--add-header', 'Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-            '--add-header', 'Origin: https://megacloud.blog',
-            '--add-header', 'Sec-Fetch-Dest: empty',
-            '--add-header', 'Sec-Fetch-Mode: cors',
-            '--add-header', 'Sec-Fetch-Site: cross-site',
             '--list-formats',
             url
         ]
         
         # Показываем команду с кавычками
-        cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --user-agent "Mozilla/5.0..." --referer "{clean_ref}" --list-formats "{url}"'
+        cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --referer "{clean_ref}" --list-formats "{url}"'
         logger.info(f"Running: {cmd_str}")
         
         process = subprocess.run(
@@ -226,7 +219,6 @@ def get_formats():
             title_cmd = [
                 'yt-dlp',
                 '--extractor-args', 'generic:impersonate=chrome-120',
-                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 '--referer', clean_ref,
                 '--get-title',
                 url
@@ -277,7 +269,6 @@ def download_video():
         title_cmd = [
             'yt-dlp',
             '--extractor-args', 'generic:impersonate=chrome-120',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             '--referer', clean_ref,
             '--get-title',
             url
@@ -299,33 +290,20 @@ def download_video():
     
     def download_task():
         try:
-            # Создаем лог файл для yt-dlp
-            log_filename = os.path.join(DOWNLOAD_FOLDER, f'{task_id}_ytdlp.log')
-            log_file = open(log_filename, 'w', encoding='utf-8')
-            
-            # 🔥 КОМАНДА С ПОЛНЫМИ ЗАГОЛОВКАМИ
+            # 🔥 КОМАНДА С ОЧИЩЕННЫМ REFERER
             cmd = [
                 'yt-dlp',
                 '--extractor-args', 'generic:impersonate=chrome-120',
-                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 '--referer', clean_ref,
-                '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                '--add-header', 'Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-                '--add-header', 'Origin: https://megacloud.blog',
-                '--add-header', 'Sec-Fetch-Dest: empty',
-                '--add-header', 'Sec-Fetch-Mode: cors',
-                '--add-header', 'Sec-Fetch-Site: cross-site',
                 '--concurrent-fragments', '10',
                 '-o', output_template,
                 '-f', format_id,
-                '--verbose',  # Добавляем подробный вывод для отладки
                 url
             ]
             
             # Показываем команду с кавычками
-            cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --user-agent "Mozilla/5.0..." --referer "{clean_ref}" -o "{output_template}" -f {format_id} "{url}"'
+            cmd_str = f'yt-dlp --extractor-args "generic:impersonate=chrome-120" --referer "{clean_ref}" -o "{output_template}" -f {format_id} "{url}"'
             logger.info(f"Task {task_id}: Running: {cmd_str}")
-            log_file.write(f"Command: {cmd_str}\n\n")
             
             download_tasks[task_id]['status'] = 'downloading'
             
@@ -345,17 +323,13 @@ def download_video():
                 if line:
                     parser.parse_line(line)
                     logger.debug(f"Task {task_id}: {line}")
-                    log_file.write(line + '\n')
-                    log_file.flush()
             
             return_code = process.wait()
-            log_file.write(f"\nReturn code: {return_code}\n")
-            log_file.close()
             
             if return_code == 0:
                 filename = None
                 for file in os.listdir(DOWNLOAD_FOLDER):
-                    if file.startswith(task_id) and not file.endswith('_ytdlp.log'):
+                    if file.startswith(task_id):
                         filename = os.path.join(DOWNLOAD_FOLDER, file)
                         break
                 
@@ -370,23 +344,9 @@ def download_video():
                         'size': file_size,
                         'completed_at': datetime.now().isoformat()
                     })
-                    
-                    # Удаляем лог файл после успешной загрузки
-                    try:
-                        os.remove(log_filename)
-                    except:
-                        pass
                 else:
-                    # Если файл не найден, читаем лог для ошибки
-                    with open(log_filename, 'r', encoding='utf-8') as f:
-                        error_log = f.read()
-                    logger.error(f"Task {task_id}: File not found. yt-dlp log: {error_log[:500]}")
                     raise Exception("File not found after download")
             else:
-                # Читаем лог для ошибки
-                with open(log_filename, 'r', encoding='utf-8') as f:
-                    error_log = f.read()
-                logger.error(f"Task {task_id}: yt-dlp exited with code {return_code}. Log: {error_log[:500]}")
                 raise Exception(f"yt-dlp exited with code {return_code}")
                 
         except Exception as e:
@@ -466,9 +426,9 @@ if __name__ == '__main__':
     print(f"Server URL: http://localhost:{port}")
     print(f"PORT from env: {os.environ.get('PORT', 'not set')}")
     print("✅ FEATURES:")
-    print("  • Auto-clean referer")
-    print("  • Full browser headers (User-Agent, Accept, Sec-Fetch)")
-    print("  • Detailed logging with yt-dlp output")
+    print("  • Auto-clean referer (fixes duplicates like aniv//anivox.fun)")
+    print("  • Quoted arguments")
+    print("  • Trailing slash added automatically")
     print(f"  • aria2c: {'AVAILABLE' if HAVE_ARIA2 else 'not found'}")
     print("="*70 + "\n")
     
