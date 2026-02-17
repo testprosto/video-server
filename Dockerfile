@@ -2,6 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN pip install --upgrade yt-dlp curl_cffi brotli
+
 # Устанавливаем ffmpeg и aria2
 RUN apt-get update && apt-get install -y \
     ffmpeg \
