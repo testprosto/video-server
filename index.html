@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>LevonK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 70px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00f5ff, #ff00c8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s infinite alternate;
+        }
+
+        p {
+            margin-top: 20px;
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        .btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            border-radius: 30px;
+            border: none;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(90deg, #00f5ff, #ff00c8);
+            color: white;
+            transition: 0.4s;
+            box-shadow: 0 0 20px rgba(255, 0, 200, 0.6);
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(0, 245, 255, 0.9);
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #00f5ff; }
+            to { text-shadow: 0 0 30px #ff00c8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>LevonK</h1>
+        <p>Добро пожаловать на мой сайт</p>
+        <button class="btn" onclick="alert('LevonK ❤️')">Перейти</button>
+    </div>
+
+</body>
+</html>
